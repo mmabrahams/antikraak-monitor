@@ -7,6 +7,9 @@ on:
   workflow_dispatch:
     # Hiermee kun je de workflow handmatig starten via de Actions-tab
 
+permissions:
+  contents: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
