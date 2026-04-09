@@ -1,0 +1,15 @@
+# Secrets - nooit uploaden!
+.env
+
+# State-bestanden (gaan naar de state-branch, niet naar main)
+state_*.json
+
+# Logbestanden
+monitor.log
+
+# Python cache
+__pycache__/
+*.pyc
+
+# macOS rommel
+.DS_Store
