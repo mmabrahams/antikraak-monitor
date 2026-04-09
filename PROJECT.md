@@ -1,64 +1,78 @@
-# Antikraak-monitor Haarlem
+# Antikraak-monitor Haarlem — Technisch ontwerp
 
 ## Doel
 
 Een monitor die regelmatig de aanbodpagina's van antikraak-beheerders checkt op nieuwe listings in Haarlem, en mij via Telegram een pushbericht stuurt zodra er iets nieuws is.
 
-## Te monitoren sites
+## Te monitoren sites (definitief)
 
 | # | Beheerder | URL | Methode | Notities |
 |---|-----------|-----|---------|----------|
-| 1 | Gapph | https://www.gapph.nl/woonruimte/antikraak/haarlem | Simpele scraping (HTML) + API `/woonruimte/load` voor extra listings | Publiek aanbod, geen login nodig om te bekijken. Login (€25/jr) alleen nodig om te reageren. |
-| 2 | VPS Leegstandbeheer | https://vpsleegstandbeheer.nl/antikraak-haarlem/ | Simpele scraping (HTML) + filteren op "Haarlem" | Toont landelijk portfolio als er niks in Haarlem is. Wij filteren zelf. |
-| 3 | Vastgoedbeschermer | https://vastgoedbeschermer.nl/ik-zoek-ruimte/aanbod-woonruimte/ | Simpele scraping (HTML) + filteren op "Haarlem" / Noord-Holland | 14 listings in HTML, actief in Noord-Holland. Nu niks in Haarlem maar kan veranderen. |
+| 1 | VPS Leegstandbeheer | https://vpsleegstandbeheer.nl/antikraak-haarlem/ | Simpele scraping (HTML) + filteren op "Haarlem" | Toont landelijk portfolio als er niks in Haarlem is. Wij filteren zelf. Gezondheidscheck op aanwezigheid `/pand/`-links + `cb--cards_slider` class. |
+| 2 | Vastgoedbeschermer | https://vastgoedbeschermer.nl/ik-zoek-ruimte/aanbod-woonruimte/ | Simpele scraping (HTML) + filteren op "Haarlem" | Listings staan in `object-card` divs. Elke kaart komt 2x voor in de HTML (afbeelding + tekst), we dedupliceren op URL. |
+| 3 | Gapph | https://www.gapph.nl/woonruimte/zoeken?region_search=haarlem | Zoekfunctie (HTML) + filteren op exact "Haarlem" | Gebruikt de zoekfunctie die listings in de buurt van Haarlem toont. We filteren op exact stadsnaam "Haarlem" (niet Heemstede, niet Haarlemmermeer). Publiek aanbod, geen login nodig om te bekijken. |
 
 ### Onderzocht en geschrapt
 
-| Site | Reden |
-|------|-------|
-| Tijdelijke Huur en Antikraak (tijdelijkehuurenantikraak.nl) | Domein offline — DNS resolve faalt. Site bestaat niet meer. |
-| De Kabath (dekabath.nl) | Alleen marketingtekst, aanbod vermoedelijk achter login. Overgeslagen op verzoek gebruiker. |
-| Villex.nl | Redirect naar Gapph — zelfde bedrijf. |
-| Kamernet.nl | Betaald abonnement vereist om contact op te nemen. Geen Haarlem-listings zichtbaar. |
-| Kamer.nl | Blokkeert geautomatiseerde verzoeken (403). |
-| Ad Hoc Beheer | Aanbodpagina geeft 404, listings laden via JavaScript, geen Haarlem-aanbod zichtbaar. Te onbetrouwbaar. |
+| Site | Reden | Onderzocht op |
+|------|-------|---------------|
+| Tijdelijke Huur en Antikraak (tijdelijkehuurenantikraak.nl) | Domein offline — DNS resolve faalt. Site bestaat niet meer. | 2026-04-09 |
+| De Kabath (dekabath.nl) | Alleen marketingtekst, aanbod vermoedelijk achter login. Overgeslagen op verzoek gebruiker. | 2026-04-09 |
+| Villex.nl | Redirect naar Gapph (302 → gapph.nl). Zelfde bedrijf. | 2026-04-09 |
+| Kamernet.nl | Betaald abonnement vereist. Geen Haarlem-listings zichtbaar. | 2026-04-09 |
+| Kamer.nl | Blokkeert geautomatiseerde verzoeken (HTTP 403). | 2026-04-09 |
+| Ad Hoc Beheer (adhocbeheer.nl) | Aanbodpagina geeft 404, listings laden via JavaScript, geen Haarlem-aanbod zichtbaar. Te onbetrouwbaar. | 2026-04-09 |
 
-## Technische keuzes
+### Afwijkingen van oorspronkelijk plan
 
-- **Taal:** Python (beginner-vriendelijk, goed gedocumenteerd).
-- **Draait op:** GitHub Actions met cron-schedule `*/5 * * * *` (elke 5 minuten). GitHub Actions cron is in de praktijk vaak vertraagd — dat accepteren we voorlopig en meten we via logging. Geen sleep-loops binnen runs.
-- **State:** Opgeslagen in een aparte git-branch `state`. De monitor checkt deze branch uit aan het begin van elke run, werkt de state bij, en pusht terug naar de `state`-branch. De `main`-branch blijft schoon.
-- **State bevat:** welke listings al gezien zijn, faal-tellers per site, timestamp van laatst gevonden listing per site.
-- **Secrets:** Telegram bot token en chat ID via GitHub Actions secrets.
-- **Portabiliteit:** Scraper en notificatielogica gescheiden van de Actions-workflow, zodat later verhuizen naar een Raspberry Pi of VPS mogelijk is zonder alles te herschrijven.
+- **Gapph URL gewijzigd:** oorspronkelijk `/antikraak/haarlem` (marketingpagina), nu `/woonruimte/zoeken?region_search=haarlem` (echte zoekfunctie met publiek aanbod).
+- **Geen Playwright nodig:** alle drie de sites serveren listings in de initiële HTML. De hybride strategie was niet nodig.
+- **De Kabath geschrapt:** oorspronkelijk in de lijst, maar op verzoek van gebruiker overgeslagen na onderzoek.
+- **Vastgoedbeschermer toegevoegd:** niet in het oorspronkelijke plan, gevonden tijdens extra onderzoek. Actief in Noord-Holland.
 
-## Scraping-strategie (hybride)
+## Technische keuzes (definitief)
 
-1. Probeer eerst of listings in de initiële HTML staan via een simpele `requests`-call.
-2. Als een site JavaScript-rendering gebruikt: zoek samen naar een verborgen JSON-API. Het onderzoek in de Network-tab van de browser doet de gebruiker, met precieze klik-instructies.
-3. Alleen als er geen API te vinden is, gebruik Playwright voor die specifieke site.
-4. Houd simpele en Playwright-scrapers gescheiden zodat snelle sites snel blijven.
-5. Elke site krijgt zijn eigen parser-module zodat één kapotte parser de rest niet meesleept.
+- **Taal:** Python 3 met `requests` en `beautifulsoup4`.
+- **Draait op:** GitHub Actions met cron-schedule `*/5 * * * *`.
+- **State:** Aparte git-branch `state`. Workflow haalt state op aan het begin, pusht terug aan het eind. De `main`-branch bevat alleen code.
+- **State bevat per site:** geziene URLs, faal-teller, timestamp van laatste check, timestamp van laatst gevonden listing, paginagrootte van vorige run.
+- **Secrets:** Telegram bot token en chat ID via GitHub Actions secrets. Lokaal via `.env` bestand (in `.gitignore`).
+- **Portabiliteit:** Alle scraper- en notificatielogica staat in Python-bestanden, volledig los van de GitHub Actions workflow. Verhuizen naar cron op een Raspberry Pi of VPS vereist alleen het vervangen van de workflow door een crontab-regel.
 
-## Gezondheidscheck
+## Scraping-strategie (definitief)
 
-- **Niet** alarmeren op basis van "aantal listings = 0" — leegte is normaal in Haarlem.
-- Wel checken: HTTP-status 200, verwachte container-structuur aanwezig, pagina-grootte ongeveer normaal vergeleken met eerdere runs.
-- **Three-strikes-regel:** pas een waarschuwing sturen na 3 opeenvolgende gefaalde runs voor dezelfde site. Een "hersteld"-bericht sturen zodra de site weer werkt na eerder te hebben gefaald.
-- Een drempel voor "structurele leegte" (bijv. X dagen geen listings terwijl dat raar is) bepalen we later, nadat we een week of twee echte data hebben verzameld. Niet nu hardcoden.
+Alle drie de sites gebruiken simpele HTML-scraping via `requests` + `BeautifulSoup`. Geen JavaScript-rendering nodig, geen Playwright, geen verborgen API's.
 
-## Foutafhandeling
+Elke site heeft een eigen parser-bestand in `scrapers/`. Elke parser retourneert een dict met:
+- `listings`: lijst van Haarlem-listings
+- `health`: gezondheidsinfo (paginagrootte, container gevonden, totaal listings)
 
-- Hoofdlogica in een try/except die bij elke onverwachte fout een Telegram-bericht stuurt met foutmelding en stacktrace.
-- In de GitHub Actions-workflow een `if: failure()`-stap die via curl een Telegram-bericht stuurt als de job zelf crasht voordat Python kan reageren. Dubbel vangnet.
+## Gezondheidscheck (definitief)
 
-## Eerste run
+- **Niet** alarmeren op basis van "0 listings" — leegte is normaal in Haarlem.
+- Check 1: verwachte HTML-structuur (CSS-class) aanwezig.
+- Check 2: paginagrootte niet kleiner dan 30% van vorige run.
+- **Three-strikes-regel:** waarschuwing na 3 opeenvolgende fouten. "Hersteld"-bericht zodra het weer werkt.
+- **Structurele leegte:** nog niet geïmplementeerd. Timestamp van laatst gevonden listing wordt gelogd. Drempel bepalen na 2+ weken data.
 
-Bij de allereerste run alle gevonden listings stil opslaan als baseline, zonder notificaties te sturen. Pas vanaf de tweede run worden echt nieuwe listings als notificatie verstuurd.
+## Foutafhandeling (definitief)
+
+Drie lagen:
+1. **Per scraper:** try/except vangt fouten op, stuurt Telegram-bericht met foutmelding, andere sites draaien gewoon door.
+2. **Hoofdscript:** buitenste try/except vangt alles op wat laag 1 mist, stuurt crash-bericht met stacktrace.
+3. **GitHub Actions:** `if: failure()`-stap stuurt via curl een Telegram-bericht als de job zelf crasht voordat Python kan reageren.
 
 ## Logging
 
-Log bij elke check het exacte tijdstip, zodat na een week gemeten kan worden hoe vaak het script écht draait (GitHub Actions cron heeft vaak vertraging).
+- Naar stdout (zichtbaar in GitHub Actions logs).
+- Naar `monitor.log` bestand (lokaal testen).
+- Elk bericht bevat een tijdstempel in het formaat `[YYYY-MM-DD HH:MM:SS]`.
+
+## Telegram-bot
+
+- **Naam:** Wonen Haarlem (@WonenHaarlemMiqibot)
+- **Chat ID:** opgeslagen in GitHub Secrets als `TELEGRAM_CHAT_ID`
+- **Bot token:** opgeslagen in GitHub Secrets als `TELEGRAM_BOT_TOKEN`
 
 ## Filters
 
