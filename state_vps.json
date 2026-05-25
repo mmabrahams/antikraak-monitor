@@ -1,7 +1,9 @@
 {
-  "seen_urls": [],
-  "last_check": "2026-05-25T00:11:18.164041",
+  "seen_urls": [
+    "https://vpsleegstandbeheer.nl/pand/werkruimte-schiphol-rijk/"
+  ],
+  "last_check": "2026-05-25T04:52:14.092958",
   "fail_count": 0,
-  "last_listing_found": null,
-  "last_page_size": 192577
+  "last_listing_found": "2026-05-25T04:52:14.092876",
+  "last_page_size": 192610
 }
