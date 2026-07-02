@@ -10,7 +10,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from shared import log, HEADERS
+from shared import log, HEADERS, in_target_area
 
 SITE_NAME = "gapph"
 SITE_LABEL = "Gapph"
@@ -128,16 +128,16 @@ def fetch_listings():
     total_listings = len(listings)
     log(f"[{SITE_NAME}] {total_listings} listings totaal ({pages_loaded} pagina's)")
 
-    # Filter op Haarlem (exacte stadsnaam)
-    haarlem = []
+    # Filter op het zoekgebied (Haarlem e.o., zie TARGET_PLACES in shared.py)
+    matches = []
     for listing in listings:
-        if listing["location"].lower().strip() == "haarlem":
-            haarlem.append(listing)
+        if in_target_area(listing["location"]):
+            matches.append(listing)
 
-    log(f"[{SITE_NAME}] {len(haarlem)} listings in Haarlem")
+    log(f"[{SITE_NAME}] {len(matches)} listings in zoekgebied")
 
     return {
-        "listings": haarlem,
+        "listings": matches,
         "health": {
             "page_size": page_size,
             "container_found": container_found,

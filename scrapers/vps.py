@@ -3,14 +3,13 @@ Scraper voor VPS Leegstandbeheer.
 Haalt listings op van de antikraak-haarlem pagina en filtert op Haarlem.
 """
 
-import re
 import requests
 from bs4 import BeautifulSoup
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from shared import log, HEADERS
+from shared import log, HEADERS, in_target_area
 
 SITE_NAME = "vps"
 SITE_LABEL = "VPS Leegstandbeheer"
@@ -58,18 +57,17 @@ def fetch_listings():
     total_listings = len(listings)
     log(f"[{SITE_NAME}] {total_listings} listings gevonden op de pagina")
 
-    # Filter op Haarlem als los woord, zodat "Haarlemmermeer"
-    # (bijv. Schiphol-Rijk) NIET meetelt
-    haarlem = []
+    # Filter op het zoekgebied (Haarlem e.o., zie TARGET_PLACES in shared.py)
+    matches = []
     for listing in listings:
-        combined = (listing["title"] + " " + listing["location"]).lower()
-        if re.search(r"\bhaarlem\b", combined):
-            haarlem.append(listing)
+        combined = listing["title"] + " " + listing["location"]
+        if in_target_area(combined):
+            matches.append(listing)
 
-    log(f"[{SITE_NAME}] {len(haarlem)} listings in Haarlem")
+    log(f"[{SITE_NAME}] {len(matches)} listings in zoekgebied")
 
     return {
-        "listings": haarlem,
+        "listings": matches,
         "health": {
             "page_size": page_size,
             "container_found": container_found,

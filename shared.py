@@ -6,6 +6,7 @@ Telegram-berichten, state-beheer, en logging.
 import requests
 import json
 import os
+import re
 import html
 from datetime import datetime
 
@@ -29,6 +30,18 @@ LOG_FILE = os.path.join(BASE_DIR, "monitor.log")
 
 # Three-strikes: na zoveel opeenvolgende fouten sturen we een waarschuwing
 FAIL_THRESHOLD = 3
+
+# --- Zoekgebied ---
+# Plaatsen waarvoor we meldingen willen. Elke plaats wordt als LOS WOORD
+# gematcht, dus "Haarlemmermeer" telt NIET mee als "Haarlem".
+# "Santpoort" vangt ook Santpoort-Noord en Santpoort-Zuid.
+TARGET_PLACES = ["haarlem", "heemstede", "overveen", "santpoort"]
+_PLACES_PATTERN = re.compile(r"\b(" + "|".join(TARGET_PLACES) + r")\b")
+
+
+def in_target_area(text):
+    """Check of een tekst een van de gewenste plaatsnamen bevat (als los woord)."""
+    return _PLACES_PATTERN.search(text.lower()) is not None
 
 # Standaard headers voor het ophalen van websites
 HEADERS = {
@@ -57,6 +70,11 @@ def send_telegram(message):
     Stuur een bericht via Telegram.
     Geeft True terug als het gelukt is, False als het mislukt is.
     """
+    # Berichten vanaf GitHub Actions krijgen een label, zodat je ze kunt
+    # onderscheiden van de (snellere) meldingen vanaf de Mac
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        message += "\n\n🛟 <i>via het GitHub-vangnet — mogelijk al eerder gemeld via je Mac</i>"
+
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     data = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -112,7 +130,7 @@ def format_telegram_message(listing, site_label):
     de Telegram-opmaak niet kunnen breken.
     """
     parts = [
-        "🏠 <b>Nieuwe antikraak in Haarlem!</b>",
+        "🏠 <b>Nieuwe antikraak gevonden!</b>",
         "",
         f"<b>{html.escape(listing['title'])}</b>",
         f"📍 {html.escape(listing['location'])}",

@@ -8,6 +8,8 @@ bestandslogging.
 """
 
 import html
+import json
+import os
 import traceback
 from datetime import datetime
 from shared import (
@@ -167,6 +169,69 @@ def check_site(site):
         return False
 
 
+def maybe_send_heartbeat():
+    """
+    Stuur eens per week een levensteken via Telegram, zodat je weet
+    dat stilte echt 'geen aanbod' betekent en niet 'monitor kapot'.
+    Draait alleen op de Mac (niet op GitHub Actions, anders krijg je het dubbel).
+    """
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        return
+
+    heartbeat_file = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "state_heartbeat.json"
+    )
+
+    # Laad de heartbeat-administratie
+    data = {}
+    if os.path.exists(heartbeat_file):
+        try:
+            with open(heartbeat_file) as f:
+                data = json.load(f)
+        except Exception:
+            data = {}
+
+    data["runs"] = data.get("runs", 0) + 1
+
+    # Is het weekrapport aan de beurt? (7 dagen sinds het vorige)
+    due = True
+    if data.get("last_heartbeat"):
+        try:
+            last = datetime.fromisoformat(data["last_heartbeat"])
+            due = (datetime.now() - last).days >= 7
+        except Exception:
+            due = True
+
+    if due:
+        regels = []
+        for site in SITES:
+            state = load_state(site["name"]) or {}
+            fails = state.get("fail_count", 0)
+            status = "gezond ✅" if fails == 0 else f"⚠️ faalt ({fails}x op rij)"
+            gevonden = state.get("last_listing_found")
+            laatste = gevonden[:10] if gevonden else "nog nooit"
+            regels.append(f"• {site['label']}: {status} — laatste vondst: {laatste}")
+
+        bericht = (
+            "💓 <b>Weekrapport antikraak-monitor</b>\n\n"
+            f"Checks sinds vorig rapport: {data['runs']}\n\n"
+            + "\n".join(regels)
+            + "\n\nGeen bericht = geen nieuw aanbod. "
+            "Zolang dit weekrapport blijft komen, draait alles."
+        )
+        if send_telegram(bericht):
+            data["last_heartbeat"] = datetime.now().isoformat()
+            data["runs"] = 0
+            log("Weekrapport (levensteken) verstuurd")
+
+    # Sla de administratie op
+    try:
+        with open(heartbeat_file, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        log(f"Kon heartbeat-administratie niet opslaan: {e}")
+
+
 def main():
     log("=== Antikraak Monitor Haarlem - Start ===")
 
@@ -191,6 +256,9 @@ def main():
     ok = sum(1 for v in results.values() if v)
     fail = sum(1 for v in results.values() if not v)
     log(f"=== Klaar: {ok} sites OK, {fail} gefaald ===")
+
+    # Wekelijks levensteken
+    maybe_send_heartbeat()
 
 
 if __name__ == "__main__":
