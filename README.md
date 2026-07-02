@@ -74,7 +74,7 @@ Open Claude Code en plak deze prompt:
 
 ```
 Mijn antikraak-monitor heeft een probleem. De scraper voor [NAAM VAN DE SITE]
-werkt niet meer. Het project staat in /Users/miquel/Claude appjes/antikraak-monitor/
+werkt niet meer. Het project staat in /Users/miquel/Claude appjes/Privé/antikraak-monitor/
 
 Belangrijk: ik ben beginner en kan geen code lezen.
 
@@ -99,7 +99,7 @@ Open Claude Code en plak:
 
 ```
 Ik wil een nieuwe site toevoegen aan mijn antikraak-monitor.
-Het project staat in /Users/miquel/Claude appjes/antikraak-monitor/
+Het project staat in /Users/miquel/Claude appjes/Privé/antikraak-monitor/
 
 De nieuwe site is: [URL VAN DE SITE]
 
@@ -119,7 +119,7 @@ Open Claude Code en plak:
 
 ```
 Ik wil [NAAM VAN DE SITE] verwijderen uit mijn antikraak-monitor.
-Het project staat in /Users/miquel/Claude appjes/antikraak-monitor/
+Het project staat in /Users/miquel/Claude appjes/Privé/antikraak-monitor/
 
 Belangrijk: ik ben beginner en kan geen code lezen.
 
@@ -152,7 +152,7 @@ Open Claude Code en plak:
 ```
 Ik wil mijn antikraak-monitor verhuizen van GitHub Actions naar
 [een Raspberry Pi / een VPS]. Het project staat in
-/Users/miquel/Claude appjes/antikraak-monitor/
+/Users/miquel/Claude appjes/Privé/antikraak-monitor/
 
 Belangrijk: ik ben beginner en kan geen code lezen.
 
