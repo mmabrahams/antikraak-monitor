@@ -2,7 +2,9 @@
 
 ## Wat doet dit?
 
-Deze monitor checkt automatisch elke 5 minuten drie antikraak-websites op nieuwe woningen in Haarlem. Als er iets nieuws verschijnt, krijg je direct een bericht op Telegram met de titel, prijs, en een link naar de listing.
+Deze monitor checkt automatisch elke 5 minuten vijf antikraak-websites op nieuwe woonruimte in het zoekgebied: **Haarlem, Heemstede, Overveen en Santpoort**. Als er iets nieuws verschijnt, krijg je direct een bericht op Telegram met de titel, prijs, en een link naar de listing.
+
+Het zoekgebied aanpassen? Vraag Claude Code: *"Pas het zoekgebied van mijn antikraak-monitor aan (TARGET_PLACES in shared.py)"*.
 
 De monitor draait op twee plekken tegelijk:
 
@@ -17,9 +19,11 @@ De monitor draait op twee plekken tegelijk:
 
 | Site | Wat de monitor doet |
 |------|---------------------|
-| **VPS Leegstandbeheer** | Haalt de Haarlem-pagina op, zoekt alle listings, filtert op "Haarlem" (de site toont ook andere steden). |
-| **Vastgoedbeschermer** | Haalt de aanbodpagina op, zoekt alle listings, filtert op "Haarlem". |
-| **Gapph** | Gebruikt de zoekfunctie van Gapph om listings in de buurt van Haarlem te vinden, filtert op exact "Haarlem". |
+| **VPS Leegstandbeheer** | Haalt de Haarlem-pagina op, zoekt alle listings, filtert op het zoekgebied. |
+| **Vastgoedbeschermer** | Haalt de aanbodpagina op, zoekt alle listings, filtert op het zoekgebied. |
+| **Gapph** (incl. Villex & Interveste, die zijn opgegaan in Gapph) | Haalt het volledige actuele aanbod op, filtert op het zoekgebied, en dubbelcheckt per match of de woning echt nog beschikbaar is. |
+| **Ad Hoc Beheer** | Haalt het volledige aanbod op (ruim 100 listings), filtert op woonruimte in het zoekgebied. |
+| **De Kabath** | Haalt de aanbodpagina op (alleen woonruimte), filtert op het zoekgebied. |
 
 ### Hoe het technisch werkt
 
@@ -41,10 +45,12 @@ Elke ~5 minuten:
 
 | Bericht | Betekenis |
 |---------|-----------|
-| 🏠 **Nieuwe antikraak in Haarlem!** | Er is een nieuwe listing gevonden. Klik op de link om te reageren. |
+| 🏠 **Nieuwe antikraak gevonden!** | Er is een nieuwe listing gevonden. Klik op de link om te reageren — snel zijn! |
+| 💓 **Weekrapport antikraak-monitor** | Wekelijks levensteken: de monitor draait, met per site de status. Blijft dit uit? Dan is er iets mis — vraag Claude Code om te kijken. |
 | ⚠️ **[Site] faalt al 3x achter elkaar!** | Een website is 3 keer op rij niet bereikbaar of gewijzigd. De monitor blijft het proberen. |
 | ✅ **[Site] werkt weer!** | Een site die eerder faalde, werkt weer. |
 | 🚨 **Kritieke fout / GitHub Actions gecrasht!** | Er is iets ernstigs misgegaan. Zie hieronder hoe je dit oplost. |
+| 🛟 **...via het GitHub-vangnet** | Dit label onder een bericht betekent: verstuurd door het vangnet. Dezelfde woning kan al eerder via je Mac gemeld zijn. |
 
 ---
 
@@ -192,8 +198,11 @@ GitHub belooft "elke 5 minuten", maar in de praktijk kan het **10 tot 30 minuten
 
 | Site | Situatie |
 |------|----------|
-| **Gapph** (achter login) | Gapph heeft een Mijn Gapph-portaal (€25/jaar) met mogelijk extra aanbod. Wij monitoren alleen het **publieke** aanbod via de zoekfunctie. Om te reageren op een listing heb je wel een account nodig. |
-| **De Kabath** | Bewust overgeslagen — alleen marketingtekst op de publieke pagina, aanbod vermoedelijk achter login. |
+| **Gapph** (achter login) | Gapph heeft een Mijn Gapph-portaal (€25/jaar) met mogelijk extra aanbod. Wij monitoren alleen het **publieke** aanbod. Om te reageren op een listing heb je wel een account nodig. |
+| **Villex & Interveste** | Bestaan niet meer als aparte sites — opgegaan in Gapph, dus automatisch gedekt. |
+| **Zwerfkei & Bewaakt en Bewoond** | Melden aanbod alleen via Facebook, niets om uit te lezen op hun website. |
+| **Prevenda** | Aanbodpagina is technisch niet uitleesbaar zonder browser (JavaScript). |
+| **Alvast** | Wel uitleesbaar, maar had bij onderzoek (juli 2026) geen aanbod in de regio. Eenvoudig toe te voegen als dat verandert. |
 | **Tijdelijke Huur en Antikraak** | Site bestaat niet meer (domein offline sinds april 2026). |
 
 ### Als een site blijvend onbereikbaar is
@@ -215,7 +224,9 @@ antikraak-monitor/
 ├── scrapers/
 │   ├── vps.py               ← VPS Leegstandbeheer scraper
 │   ├── vastgoedbeschermer.py ← Vastgoedbeschermer scraper
-│   └── gapph.py             ← Gapph scraper
+│   ├── gapph.py             ← Gapph scraper (incl. Villex & Interveste)
+│   ├── adhoc.py             ← Ad Hoc Beheer scraper
+│   └── dekabath.py          ← De Kabath scraper
 ├── monitor.py               ← Hoofdscript (roept alle scrapers aan)
 ├── shared.py                ← Gedeelde functies (Telegram, state, logging)
 ├── simuleer_listing.py      ← Testscript: stuur nep-berichten
