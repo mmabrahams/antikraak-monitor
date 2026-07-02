@@ -14,7 +14,9 @@ from shared import log, HEADERS, in_target_area
 
 SITE_NAME = "gapph"
 SITE_LABEL = "Gapph"
-SEARCH_URL = "https://www.gapph.nl/woonruimte/zoeken?region_search=haarlem"
+# We halen het VOLLEDIGE aanbod op (niet de regio-zoekfunctie, want die
+# bleek listings in bijv. Heemstede weg te laten) en filteren zelf op plaats.
+SEARCH_URL = "https://www.gapph.nl/woonruimte"
 LOAD_URL = "https://www.gapph.nl/woonruimte/load"
 BASE_URL = "https://www.gapph.nl/"
 
@@ -23,13 +25,14 @@ EXPECTED_CONTAINER = "target_link"
 
 
 def _parse_cards(soup):
-    """Parse listing-kaarten uit een stuk HTML."""
+    """Parse listing-kaarten uit een stuk HTML (ontdubbeld op URL)."""
     cards = soup.find_all(
         "div",
         class_=lambda c: c and "target_link" in c if c else False,
     )
 
     listings = []
+    seen = set()
     for card in cards:
         texts = [t.strip() for t in card.get_text().split("\n") if t.strip()]
         links = card.find_all("a", href=True)
@@ -42,6 +45,10 @@ def _parse_cards(soup):
             url = raw_url
         else:
             url = BASE_URL + raw_url.lstrip("/")
+
+        if url in seen:
+            continue
+        seen.add(url)
 
         price = ""
         city = ""
@@ -95,38 +102,12 @@ def fetch_listings():
     search_form = soup.find(id="azoeken")
     container_found = search_form is not None
 
+    # LET OP: we gebruiken bewust GEEN doorklik-paginering ("Meer aanbod").
+    # Dat bleek een archief met oude, al-vergeven woningen terug te geven.
+    # De eerste pagina toont het volledige actuele aanbod.
     listings = _parse_cards(soup)
-    log(f"[{SITE_NAME}] {len(listings)} listings op eerste pagina")
-
-    # Laad extra pagina's als die er zijn
-    loadmore = soup.find(id="loadmore")
-    pages_loaded = 1
-
-    while loadmore and pages_loaded < 15:
-        last_id = loadmore.get("data-id", "")
-        if not last_id:
-            break
-
-        log(f"[{SITE_NAME}] Extra pagina laden (lastid={last_id})...")
-        load_response = requests.post(
-            LOAD_URL,
-            headers=HEADERS,
-            data={"lastid": last_id},
-            timeout=15,
-        )
-
-        if not load_response.ok or not load_response.text.strip():
-            break
-
-        page_soup = BeautifulSoup(load_response.text, "html.parser")
-        page_listings = _parse_cards(page_soup)
-        listings.extend(page_listings)
-        pages_loaded += 1
-
-        loadmore = page_soup.find(id="loadmore")
-
     total_listings = len(listings)
-    log(f"[{SITE_NAME}] {total_listings} listings totaal ({pages_loaded} pagina's)")
+    log(f"[{SITE_NAME}] {total_listings} actuele listings gevonden")
 
     # Filter op het zoekgebied (Haarlem e.o., zie TARGET_PLACES in shared.py)
     matches = []
@@ -136,8 +117,22 @@ def fetch_listings():
 
     log(f"[{SITE_NAME}] {len(matches)} listings in zoekgebied")
 
+    # Dubbelcheck per match: is de woning echt nog beschikbaar?
+    # (voorkomt meldingen over al-vergeven woningen)
+    beschikbaar = []
+    for listing in matches:
+        try:
+            detail = requests.get(listing["url"], headers=HEADERS, timeout=15)
+            if detail.ok and "niet beschikbaar" in detail.text.lower():
+                log(f"[{SITE_NAME}] Overgeslagen (niet meer beschikbaar): {listing['title']}")
+                continue
+        except Exception as e:
+            # Bij twijfel tóch melden: liever een melding te veel dan een gemiste woning
+            log(f"[{SITE_NAME}] Dubbelcheck mislukt ({e}), listing wordt toch gemeld")
+        beschikbaar.append(listing)
+
     return {
-        "listings": matches,
+        "listings": beschikbaar,
         "health": {
             "page_size": page_size,
             "container_found": container_found,
