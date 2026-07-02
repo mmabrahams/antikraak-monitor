@@ -4,7 +4,10 @@
 
 Deze monitor checkt automatisch elke 5 minuten drie antikraak-websites op nieuwe woningen in Haarlem. Als er iets nieuws verschijnt, krijg je direct een bericht op Telegram met de titel, prijs, en een link naar de listing.
 
-De monitor draait 24/7 in de cloud via GitHub Actions — je laptop hoeft niet aan te staan.
+De monitor draait op twee plekken tegelijk:
+
+- **Op je Mac** (hoofdmonitor): checkt écht elke 5 minuten, zolang je Mac aan staat. Dit is ingesteld via "launchd", de ingebouwde taakplanner van macOS.
+- **In de cloud via GitHub Actions** (vangnet): checkt elke 1 à 3 uur, ook als je Mac uit staat.
 
 ---
 
@@ -22,7 +25,7 @@ De monitor draait 24/7 in de cloud via GitHub Actions — je laptop hoeft niet a
 
 ```
 Elke ~5 minuten:
-  1. GitHub Actions start het script
+  1. Je Mac (of GitHub Actions) start het script
   2. Het script haalt de opgeslagen "state" op (welke listings al gezien zijn)
   3. Per site: haal de pagina op → zoek listings → filter op Haarlem
   4. Vergelijk met wat al gezien is → stuur Telegram bij iets nieuws
@@ -46,6 +49,18 @@ Elke ~5 minuten:
 ---
 
 ## Hoe zie ik of de monitor nog draait?
+
+### Op je Mac (hoofdmonitor)
+
+De makkelijkste manier: open Claude Code en vraag *"Werkt mijn antikraak-monitor nog?"*
+
+Of open Terminal en plak dit commando (toont de laatste checks):
+
+```
+tail -5 "/Users/miquel/Claude appjes/Privé/antikraak-monitor/launchd_out.log"
+```
+
+### In de cloud (vangnet)
 
 1. Ga naar **github.com/mmabrahams/antikraak-monitor**
 2. Klik bovenaan op het tabje **Actions**

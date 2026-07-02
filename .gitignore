@@ -6,6 +6,7 @@ state_*.json
 
 # Logbestanden
 monitor.log
+launchd_*.log
 
 # Python cache
 __pycache__/
