@@ -6,6 +6,7 @@ Telegram-berichten, state-beheer, en logging.
 import requests
 import json
 import os
+import html
 from datetime import datetime
 
 # --- Laad .env bestand als het bestaat (voor lokaal testen) ---
@@ -52,7 +53,10 @@ def log(message):
 
 
 def send_telegram(message):
-    """Stuur een bericht via Telegram."""
+    """
+    Stuur een bericht via Telegram.
+    Geeft True terug als het gelukt is, False als het mislukt is.
+    """
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     data = {
         "chat_id": TELEGRAM_CHAT_ID,
@@ -64,10 +68,12 @@ def send_telegram(message):
         response = requests.post(url, data=data, timeout=10)
         if response.ok:
             log("Telegram-bericht verstuurd.")
-        else:
-            log(f"Telegram-fout: {response.status_code} - {response.text}")
+            return True
+        log(f"Telegram-fout: {response.status_code} - {response.text}")
+        return False
     except Exception as e:
         log(f"Kon Telegram-bericht niet versturen: {e}")
+        return False
 
 
 def load_state(site_name):
@@ -100,21 +106,25 @@ def save_state(site_name, seen_urls, fail_count=0, last_listing_found=None,
 
 
 def format_telegram_message(listing, site_label):
-    """Maak een mooi Telegram-bericht voor een nieuwe listing."""
+    """
+    Maak een mooi Telegram-bericht voor een nieuwe listing.
+    Tekst van de website wordt ge-escaped zodat tekens als < > &
+    de Telegram-opmaak niet kunnen breken.
+    """
     parts = [
         "🏠 <b>Nieuwe antikraak in Haarlem!</b>",
         "",
-        f"<b>{listing['title']}</b>",
-        f"📍 {listing['location']}",
+        f"<b>{html.escape(listing['title'])}</b>",
+        f"📍 {html.escape(listing['location'])}",
     ]
     if listing.get("price"):
-        parts.append(f"💰 {listing['price']}")
+        parts.append(f"💰 {html.escape(listing['price'])}")
     if listing.get("size"):
-        parts.append(f"📐 {listing['size']}")
+        parts.append(f"📐 {html.escape(listing['size'])}")
     if listing.get("type"):
-        parts.append(f"🏷️ {listing['type']}")
+        parts.append(f"🏷️ {html.escape(listing['type'])}")
     parts.append("")
-    parts.append(f"🔗 <a href=\"{listing['url']}\">Bekijk de listing</a>")
+    parts.append(f"🔗 <a href=\"{html.escape(listing['url'], quote=True)}\">Bekijk de listing</a>")
     parts.append("")
     parts.append(f"— {site_label}")
 

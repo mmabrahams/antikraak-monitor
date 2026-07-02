@@ -7,6 +7,7 @@ Bevat: gezondheidscheck, three-strikes-regel, foutafhandeling,
 bestandslogging.
 """
 
+import html
 import traceback
 from datetime import datetime
 from shared import (
@@ -49,9 +50,10 @@ def handle_failure(name, label, state, error_message):
 
     if new_fail_count == FAIL_THRESHOLD:
         # Exact op de drempel: stuur waarschuwing
+        # (foutmelding escapen zodat < > & de opmaak niet breken)
         send_telegram(
             f"⚠️ <b>{label} faalt al {FAIL_THRESHOLD}x achter elkaar!</b>\n\n"
-            f"Laatste fout: {error_message}\n\n"
+            f"Laatste fout: {html.escape(error_message)}\n\n"
             f"De monitor blijft het proberen. Je krijgt bericht zodra het weer werkt."
         )
     elif new_fail_count > FAIL_THRESHOLD:
@@ -132,14 +134,18 @@ def check_site(site):
             log(f"[{name}] {len(new_listings)} NIEUWE listing(s)!")
             for listing in new_listings:
                 message = format_telegram_message(listing, label)
-                send_telegram(message)
-                log(f"[{name}] Nieuw: {listing['title']}")
+                if send_telegram(message):
+                    # Alleen als het bericht echt is aangekomen,
+                    # markeren we de listing als gemeld
+                    seen_urls.add(listing["url"])
+                    log(f"[{name}] Nieuw: {listing['title']}")
+                else:
+                    log(
+                        f"[{name}] Bericht MISLUKT voor: {listing['title']} "
+                        f"- nieuwe poging bij de volgende run"
+                    )
         else:
             log(f"[{name}] Geen nieuwe listings.")
-
-        # Werk geziene URLs bij
-        for listing in haarlem_listings:
-            seen_urls.add(listing["url"])
 
         # Bepaal wanneer we voor het laatst een listing vonden
         last_found = state.get("last_listing_found")
@@ -176,8 +182,8 @@ def main():
             send_telegram(
                 f"🚨 <b>Kritieke fout in de monitor!</b>\n\n"
                 f"Site: {site['label']}\n"
-                f"Fout: {type(e).__name__}: {e}\n\n"
-                f"<pre>{traceback.format_exc()[-500:]}</pre>"
+                f"Fout: {html.escape(f'{type(e).__name__}: {e}')}\n\n"
+                f"<pre>{html.escape(traceback.format_exc()[-500:])}</pre>"
             )
             results[site["name"]] = False
 
@@ -197,7 +203,7 @@ if __name__ == "__main__":
         try:
             send_telegram(
                 f"🚨 <b>Monitor compleet gecrasht!</b>\n\n"
-                f"<pre>{error_text[-800:]}</pre>"
+                f"<pre>{html.escape(error_text[-800:])}</pre>"
             )
         except Exception:
             pass  # Als zelfs Telegram niet werkt, kunnen we niks meer doen

@@ -3,6 +3,7 @@ Scraper voor Vastgoedbeschermer.
 Haalt listings op van de woonruimte-aanbodpagina en filtert op Haarlem.
 """
 
+import re
 import requests
 from bs4 import BeautifulSoup
 import sys
@@ -79,11 +80,11 @@ def fetch_listings():
     total_listings = len(listings)
     log(f"[{SITE_NAME}] {total_listings} listings gevonden")
 
-    # Filter op Haarlem
+    # Filter op Haarlem als los woord, zodat "Haarlemmermeer" NIET meetelt
     haarlem = []
     for listing in listings:
         combined = (listing["title"] + " " + listing["location"]).lower()
-        if "haarlem" in combined:
+        if re.search(r"\bhaarlem\b", combined):
             haarlem.append(listing)
 
     log(f"[{SITE_NAME}] {len(haarlem)} listings in Haarlem")
