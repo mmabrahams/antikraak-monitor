@@ -18,7 +18,7 @@ from shared import (
 )
 
 # Importeer alle scrapers
-from scrapers import vps, vastgoedbeschermer, gapph, adhoc, dekabath
+from scrapers import vps, vastgoedbeschermer, gapph, dekabath
 
 # Lijst van alle sites die we monitoren
 SITES = [
@@ -36,11 +36,6 @@ SITES = [
         "name": "gapph",
         "label": "Gapph (incl. Villex & Interveste)",
         "scraper": gapph,
-    },
-    {
-        "name": "adhoc",
-        "label": "Ad Hoc Beheer",
-        "scraper": adhoc,
     },
     {
         "name": "dekabath",

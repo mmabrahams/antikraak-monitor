@@ -2,7 +2,7 @@
 
 ## Wat doet dit?
 
-Deze monitor checkt automatisch elke 5 minuten vijf antikraak-websites op nieuwe woonruimte in het zoekgebied: **Haarlem, Heemstede, Overveen en Santpoort**. Als er iets nieuws verschijnt, krijg je direct een bericht op Telegram met de titel, prijs, en een link naar de listing.
+Deze monitor checkt automatisch elke 5 minuten vier antikraak-websites op nieuwe woonruimte in het zoekgebied: **Haarlem, Heemstede, Overveen en Santpoort**. Als er iets nieuws verschijnt, krijg je direct een bericht op Telegram met de titel, prijs, en een link naar de listing.
 
 Het zoekgebied aanpassen? Vraag Claude Code: *"Pas het zoekgebied van mijn antikraak-monitor aan (TARGET_PLACES in shared.py)"*.
 
@@ -22,7 +22,6 @@ De monitor draait op twee plekken tegelijk:
 | **VPS Leegstandbeheer** | Haalt de Haarlem-pagina op, zoekt alle listings, filtert op het zoekgebied. |
 | **Vastgoedbeschermer** | Haalt de aanbodpagina op, zoekt alle listings, filtert op het zoekgebied. |
 | **Gapph** (incl. Villex & Interveste, die zijn opgegaan in Gapph) | Haalt het volledige actuele aanbod op, filtert op het zoekgebied, en dubbelcheckt per match of de woning echt nog beschikbaar is. |
-| **Ad Hoc Beheer** | Haalt het volledige aanbod op (ruim 100 listings), filtert op woonruimte in het zoekgebied. |
 | **De Kabath** | Haalt de aanbodpagina op (alleen woonruimte), filtert op het zoekgebied. |
 
 ### Hoe het technisch werkt
@@ -200,6 +199,7 @@ GitHub belooft "elke 5 minuten", maar in de praktijk kan het **10 tot 30 minuten
 |------|----------|
 | **Gapph** (achter login) | Gapph heeft een Mijn Gapph-portaal (€25/jaar) met mogelijk extra aanbod. Wij monitoren alleen het **publieke** aanbod. Om te reageren op een listing heb je wel een account nodig. |
 | **Villex & Interveste** | Bestaan niet meer als aparte sites — opgegaan in Gapph, dus automatisch gedekt. |
+| **Ad Hoc Beheer** | In juli 2026 kort gemonitord en weer verwijderd: Ad Hoc werkt met een voordrachtsysteem ("je kunt je alleen inschrijven als een huidige bewoner je voordraagt"). Zonder voordracht heb je niets aan snelle meldingen. Weer toevoegen kan altijd (zie "Site toevoegen") als je iemand kent die via Ad Hoc woont. |
 | **Zwerfkei & Bewaakt en Bewoond** | Melden aanbod alleen via Facebook, niets om uit te lezen op hun website. |
 | **Prevenda** | Aanbodpagina is technisch niet uitleesbaar zonder browser (JavaScript). |
 | **Alvast** | Wel uitleesbaar, maar had bij onderzoek (juli 2026) geen aanbod in de regio. Eenvoudig toe te voegen als dat verandert. |
@@ -225,7 +225,6 @@ antikraak-monitor/
 │   ├── vps.py               ← VPS Leegstandbeheer scraper
 │   ├── vastgoedbeschermer.py ← Vastgoedbeschermer scraper
 │   ├── gapph.py             ← Gapph scraper (incl. Villex & Interveste)
-│   ├── adhoc.py             ← Ad Hoc Beheer scraper
 │   └── dekabath.py          ← De Kabath scraper
 ├── monitor.py               ← Hoofdscript (roept alle scrapers aan)
 ├── shared.py                ← Gedeelde functies (Telegram, state, logging)
