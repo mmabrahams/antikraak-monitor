@@ -12,6 +12,8 @@ import json
 import os
 import traceback
 from datetime import datetime
+
+import requests
 from shared import (
     log, send_telegram, load_state, save_state,
     format_telegram_message, check_health, FAIL_THRESHOLD,
@@ -237,8 +239,32 @@ def maybe_send_heartbeat():
         log(f"Kon heartbeat-administratie niet opslaan: {e}")
 
 
+def internet_beschikbaar():
+    """
+    Controleer of de Mac zelf internet heeft, vóórdat we de sites checken.
+    Als de eigen verbinding weg is (haperende wifi), is elke site-fout
+    onzin en zou de monitor onterecht gaan waarschuwen en herstellen.
+    We proberen twee zeer betrouwbare adressen; één geslaagde is genoeg.
+    """
+    for test_url in ("https://www.google.com", "https://one.one.one.one"):
+        try:
+            requests.head(test_url, timeout=5)
+            return True
+        except Exception:
+            continue
+    return False
+
+
 def main():
     log("=== Antikraak Monitor Haarlem - Start ===")
+
+    # Geen internet? Dan is er niets zinnigs te checken: sla de hele run
+    # stilletjes over. Fouten tellen we niet (anders krijg je bij elke
+    # wifi-hapering een regen van 'faalt!'- en 'werkt weer!'-berichten).
+    if not internet_beschikbaar():
+        log("Geen werkende internetverbinding - run overgeslagen, "
+            "geen fouten geteld en geen berichten gestuurd.")
+        return
 
     results = {}
     for site in SITES:
