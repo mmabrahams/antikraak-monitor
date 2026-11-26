@@ -1,12 +1,12 @@
 {
   "seen_urls": [
-    "https://vpsleegstandbeheer.nl/pand/werkruimtes-haarlem/",
+    "https://vpsleegstandbeheer.nl/pand/werkruimte-schiphol-rijk/",
     "https://vpsleegstandbeheer.nl/pand/werkruimte-haarlem-3/",
-    "https://vpsleegstandbeheer.nl/pand/werkruimte-haarlem-2/",
-    "https://vpsleegstandbeheer.nl/pand/werkruimte-schiphol-rijk/"
+    "https://vpsleegstandbeheer.nl/pand/werkruimtes-haarlem/",
+    "https://vpsleegstandbeheer.nl/pand/werkruimte-haarlem-2/"
   ],
-  "last_check": "2026-11-25T22:45:11.339887",
+  "last_check": "2026-11-26T04:29:08.765386",
   "fail_count": 0,
-  "last_listing_found": "2026-11-25T22:45:11.339817",
+  "last_listing_found": "2026-11-26T04:29:08.765329",
   "last_page_size": 180418
 }
